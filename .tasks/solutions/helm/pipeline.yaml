@@ -1,0 +1,42 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: helm-rewine-pipeline
+  namespace: package-deploy
+spec:
+  tasks:
+    - name: helm-upgrade-from-repo
+      params:
+        - name: helm_repo
+          value: 'https://mcouliba.github.io/helm-charts'
+        - name: chart_name
+          value: mcouliba/cloud-native-java
+        - name: release_version
+          value: v1.0.0
+        - name: release_name
+          value: rewine-backend
+        - name: overwrite_values
+          value: >-
+            image.repository=image-registry.openshift-image-registry.svc:5000/package-deploy-dev/rewine-backend,image.tag=latest
+        - name: helm_version
+          value: latest
+        - name: release_namespace
+          value: package-deploy
+      taskRef:
+        kind: ClusterTask
+        name: helm-upgrade-from-repo
+    - name: deploy
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - rollout
+            - status
+            - deploy/rewine-backend-cloud-native-java
+      runAfter:
+        - helm-upgrade-from-repo
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client

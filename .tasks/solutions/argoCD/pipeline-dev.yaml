@@ -1,0 +1,58 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: argocd-rewine-pipeline
+  namespace: package-deploy-dev
+spec:
+  tasks:
+    - name: argocd-task-sync-and-wait
+      params:
+        - name: application-name
+          value: rewine-backend-dev
+      taskRef:
+        kind: Task
+        name: argocd-task-sync-and-wait
+    - name: deploy
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - rollout
+            - status
+            - deploy/rewine-backend-dev-cloud-native-java
+      runAfter:
+        - argocd-task-sync-and-wait
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: simu-integration-tests
+      params:
+        - name: SCRIPT
+          value: echo $@
+        - name: ARGS
+          value:
+            - '"Tests OK"'
+      runAfter:
+        - deploy
+      taskRef:
+        kind: Task
+        name: bash-cli
+    - name: trigger-staging-pipeline
+      params:
+        - name: tkn-image
+          value: >-
+            gcr.io/tekton-releases/dogfooding/tkn@sha256:f79c0a56d561b1ae98afca545d0feaf2759f5c486ef891a79f23dc2451167dad
+        - name: ARGS
+          value:
+            - pipeline
+            - start
+            - argocd-rewine-pipeline
+            - '-n'
+            - package-deploy-staging
+      runAfter:
+        - simu-integration-tests
+      taskRef:
+        kind: ClusterTask
+        name: tkn

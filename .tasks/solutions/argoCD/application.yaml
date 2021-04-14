@@ -1,0 +1,72 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rewine-backend-dev
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: package-deploy-dev
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    chart: cloud-native-java
+    helm:
+      parameters:
+        - name: type
+          value: openshift
+        - name: image.repository
+          value: >-
+            image-registry.openshift-image-registry.svc:5000/package-deploy-dev/rewine-backend
+        - name: image.tag
+          value: latest
+    repoURL: 'https://mcouliba.github.io/helm-charts'
+    targetRevision: 0.1.0
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rewine-backend-staging
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: package-deploy-staging
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    chart: cloud-native-java
+    helm:
+      parameters:
+        - name: type
+          value: openjdk
+        - name: image.repository
+          value: >-
+            image-registry.openshift-image-registry.svc:5000/package-deploy-dev/rewine-backend
+        - name: image.tag
+          value: latest
+    repoURL: 'https://mcouliba.github.io/helm-charts'
+    targetRevision: 0.1.0
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rewine-backend-prod
+  namespace: openshift-gitops
+spec:
+  destination:
+    namespace: package-deploy
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    chart: cloud-native-java
+    helm:
+      parameters:
+        - name: type
+          value: quarkus
+        - name: image.repository
+          value: >-
+            image-registry.openshift-image-registry.svc:5000/package-deploy-dev/rewine-backend
+        - name: image.tag
+          value: latest
+    repoURL: 'https://mcouliba.github.io/helm-charts'
+    targetRevision: 0.1.0
